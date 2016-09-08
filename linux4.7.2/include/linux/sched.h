@@ -1638,8 +1638,8 @@ struct task_struct {
 	struct nameidata *nameidata;
 #ifdef CONFIG_SYSVIPC
 /* ipc stuff */
-	struct sysv_sem sysvsem;
-	struct sysv_shm sysvshm;
+	struct sysv_sem sysvsem;            /* 进程信号量资源 */
+	struct sysv_shm sysvshm;           /* 进程共享内存资源 */
 #endif
 #ifdef CONFIG_DETECT_HUNG_TASK
 /* hung task detection */

@@ -10,6 +10,7 @@
 #include <linux/kref.h>
 #include <linux/ns_common.h>
 
+/* 和2.6.11结构相同 */
 struct pidmap {
        atomic_t nr_free;
        void *page;
@@ -21,16 +22,22 @@ struct pidmap {
 
 struct fs_pin;
 
+/* pid名称空间 */
 struct pid_namespace {
 	struct kref kref;
 	struct pidmap pidmap[PIDMAP_ENTRIES];
 	struct rcu_head rcu;
-	int last_pid;
+	int last_pid;		/* 空间当中最后一个分配的pid */
+	/* 名称空间当中添加到hash链表当中upid的个数 */
 	unsigned int nr_hashed;
+	/* 该进程的作用是子进程结束时为其收尸，
+	  * 由于目前只支持global namespace，所以指向init_task 
+	  */
 	struct task_struct *child_reaper;
-	struct kmem_cache *pid_cachep;
-	unsigned int level;
-	struct pid_namespace *parent;
+	/* 分配struct pid的内存缓冲， */
+	struct kmem_cache *pid_cachep;		
+	unsigned int level;		/* 表示名称空间处在第几层 */
+	struct pid_namespace *parent;			/* 父名称空间 */
 #ifdef CONFIG_PROC_FS
 	struct vfsmount *proc_mnt;
 	struct dentry *proc_self;
@@ -39,7 +46,7 @@ struct pid_namespace {
 #ifdef CONFIG_BSD_PROCESS_ACCT
 	struct fs_pin *bacct;
 #endif
-	struct user_namespace *user_ns;
+	struct user_namespace *user_ns;		/* 用户名称空间 */
 	struct work_struct proc_work;
 	kgid_t pid_gid;
 	int hide_pid;

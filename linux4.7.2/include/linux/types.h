@@ -181,6 +181,7 @@ typedef struct {
 } atomic64_t;
 #endif
 
+/* 双向链表 */
 struct list_head {
 	struct list_head *next, *prev;
 };
@@ -219,6 +220,8 @@ struct ustat {
  *    which encode PageTail() in bit 0. The guarantee is needed to avoid
  *    false-positive PageTail().
  */
+
+/* 回调函数链表 */
 struct callback_head {
 	struct callback_head *next;
 	void (*func)(struct callback_head *head);

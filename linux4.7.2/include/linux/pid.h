@@ -49,19 +49,23 @@ enum pid_type
 
 struct upid {
 	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
-	int nr;
-	struct pid_namespace *ns;
-	struct hlist_node pid_chain;
+	int nr;           /* 表示pid的值 */
+	struct pid_namespace *ns;  /* 所处的名称空间 */
+	struct hlist_node pid_chain;      /* hash链表 */
 };
 
 struct pid
 {
 	atomic_t count;
-	unsigned int level;
+        /* 表示该pid在名称空间中的第几层，当为0时表示全局名称空间 */
+	unsigned int level; 
 	/* lists of tasks that use this pid */
-	struct hlist_head tasks[PIDTYPE_MAX];
+	struct hlist_head tasks[PIDTYPE_MAX];      /* 和task_struct当中的pids中的node形成链表 */
 	struct rcu_head rcu;
-	struct upid numbers[1];
+        /* 虽说只有一个元素，但是内存后面根据level的层级会有不同的连续内存的大小
+          * 层级的编号从0开始，0表示全局空间 
+          */
+	struct upid numbers[1];      
 };
 
 extern struct pid init_struct_pid;
@@ -72,6 +76,7 @@ struct pid_link
 	struct pid *pid;
 };
 
+/* 增加引用计数 */
 static inline struct pid *get_pid(struct pid *pid)
 {
 	if (pid)
@@ -131,6 +136,7 @@ extern void disable_pid_allocation(struct pid_namespace *ns);
  * 	is expected to be non-NULL. If @pid is NULL, caller should handle
  * 	the resulting NULL pid-ns.
  */
+/* 获取pid所在层级的名称空间 */
 static inline struct pid_namespace *ns_of_pid(struct pid *pid)
 {
 	struct pid_namespace *ns = NULL;

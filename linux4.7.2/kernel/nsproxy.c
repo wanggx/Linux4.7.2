@@ -29,6 +29,7 @@
 
 static struct kmem_cache *nsproxy_cachep;
 
+/* 初始名称空间 */
 struct nsproxy init_nsproxy = {
 	.count			= ATOMIC_INIT(1),
 	.uts_ns			= &init_uts_ns,

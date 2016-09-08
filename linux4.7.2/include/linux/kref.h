@@ -20,6 +20,7 @@
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 
+/* 内核的引用计数结构 */
 struct kref {
 	atomic_t refcount;
 };
@@ -28,6 +29,7 @@ struct kref {
  * kref_init - initialize object.
  * @kref: object in question.
  */
+/* 初始化引用计数为1 */
 static inline void kref_init(struct kref *kref)
 {
 	atomic_set(&kref->refcount, 1);

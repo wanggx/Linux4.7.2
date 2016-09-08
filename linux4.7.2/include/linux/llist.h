@@ -58,10 +58,12 @@
 #include <linux/atomic.h>
 #include <linux/kernel.h>
 
+/* 单链表头部 */
 struct llist_head {
 	struct llist_node *first;
 };
 
+/* 单链表结构 */
 struct llist_node {
 	struct llist_node *next;
 };

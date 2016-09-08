@@ -41,17 +41,24 @@
 
 #define pid_hashfn(nr, ns)	\
 	hash_long((unsigned long)nr + (unsigned long)ns, pidhash_shift)
+/* 是个数组，数组的元素为4个，见下面变量，
+  * 通过上面的宏hash数组中元素的位置
+  */
 static struct hlist_head *pid_hash;
 static unsigned int pidhash_shift = 4;
+/* 全局进程空间 */
 struct pid init_struct_pid = INIT_STRUCT_PID;
 
+/* 最大进程号 */
 int pid_max = PID_MAX_DEFAULT;
 
+/* 进程号循环时，从300开始 */
 #define RESERVED_PIDS		300
 
 int pid_max_min = RESERVED_PIDS + 1;
 int pid_max_max = PID_MAX_LIMIT;
 
+/* 从名称空间中生成一个pid */
 static inline int mk_pid(struct pid_namespace *pid_ns,
 		struct pidmap *map, int off)
 {
@@ -151,6 +158,7 @@ static void set_last_pid(struct pid_namespace *pid_ns, int base, int pid)
 	} while ((prev != last_write) && (pid_before(base, last_write, pid)));
 }
 
+/* 从pid名称空间当中分配一个进程的id */
 static int alloc_pidmap(struct pid_namespace *pid_ns)
 {
 	int i, offset, max_scan, pid, last = pid_ns->last_pid;
@@ -160,12 +168,14 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 	if (pid >= pid_max)
 		pid = RESERVED_PIDS;
 	offset = pid & BITS_PER_PAGE_MASK;
+        /* 计算从那一页内存开始扫描 */
 	map = &pid_ns->pidmap[pid/BITS_PER_PAGE];
 	/*
 	 * If last_pid points into the middle of the map->page we
 	 * want to scan this bitmap block twice, the second time
 	 * we start with offset == 0 (or RESERVED_PIDS).
 	 */
+        /* pid_max除BITS_PER_PAGE向上取整 */
 	max_scan = DIV_ROUND_UP(pid_max, BITS_PER_PAGE) - !offset;
 	for (i = 0; i <= max_scan; ++i) {
 		if (unlikely(!map->page)) {
@@ -184,6 +194,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 			if (unlikely(!map->page))
 				return -ENOMEM;
 		}
+                /* 如果当前页还有空闲位 */
 		if (likely(atomic_read(&map->nr_free))) {
 			for ( ; ; ) {
 				if (!test_and_set_bit(offset, map->page)) {
@@ -199,6 +210,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 					break;
 			}
 		}
+                /* 开始下一页扫描位 */
 		if (map < &pid_ns->pidmap[(pid_max-1)/BITS_PER_PAGE]) {
 			++map;
 			offset = 0;
@@ -213,6 +225,7 @@ static int alloc_pidmap(struct pid_namespace *pid_ns)
 	return -EAGAIN;
 }
 
+/* 从进程空间当中分配一个last之后的进程号 */
 int next_pidmap(struct pid_namespace *pid_ns, unsigned int last)
 {
 	int offset;
@@ -224,7 +237,9 @@ int next_pidmap(struct pid_namespace *pid_ns, unsigned int last)
 	offset = (last + 1) & BITS_PER_PAGE_MASK;
 	map = &pid_ns->pidmap[(last + 1)/BITS_PER_PAGE];
 	end = &pid_ns->pidmap[PIDMAP_ENTRIES];
+        /* 扫描到进程名称空间最后就不循环了 */
 	for (; map < end; map++, offset = 0) {
+                /* 注意内存为空并不分配 */
 		if (unlikely(!map->page))
 			continue;
 		offset = find_next_bit((map)->page, BITS_PER_PAGE, offset);
@@ -294,6 +309,11 @@ void free_pid(struct pid *pid)
 	call_rcu(&pid->rcu, delayed_put_pid);
 }
 
+/* 从名称空间当中分配一个 struct pid，
+  * 在名称空间当中分配一个struct pid结构 
+  * 但是当前名称空间的所有上层空间都需需要知道 
+  * 新分配的pid的信息 
+  */
 struct pid *alloc_pid(struct pid_namespace *ns)
 {
 	struct pid *pid;
@@ -309,13 +329,18 @@ struct pid *alloc_pid(struct pid_namespace *ns)
 
 	tmp = ns;
 	pid->level = ns->level;
+        /* 扫描以上的所有层级，设置向上所有层级的的进程号和空间
+          * 一个进程可以属于多个层级， 
+          */
 	for (i = ns->level; i >= 0; i--) {
+                /* 每个层级都分配一个进程号 */
 		nr = alloc_pidmap(tmp);
+                /* 分配进程号失败 */
 		if (nr < 0) {
 			retval = nr;
 			goto out_free;
 		}
-
+                /* 设置不同层级upid的进程号和名称空间，并且向上查找父空间 */
 		pid->numbers[i].nr = nr;
 		pid->numbers[i].ns = tmp;
 		tmp = tmp->parent;
@@ -335,6 +360,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
 	spin_lock_irq(&pidmap_lock);
 	if (!(ns->nr_hashed & PIDNS_HASH_ADDING))
 		goto out_unlock;
+        /* 从低层级到高层级 */
 	for ( ; upid >= pid->numbers; --upid) {
 		hlist_add_head_rcu(&upid->pid_chain,
 				&pid_hash[pid_hashfn(upid->nr, upid->ns)]);
@@ -363,6 +389,7 @@ void disable_pid_allocation(struct pid_namespace *ns)
 	spin_unlock_irq(&pidmap_lock);
 }
 
+/* 在名称空间当中查找进程号为nr的pid */
 struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
 {
 	struct upid *pnr;
@@ -377,6 +404,7 @@ struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
 }
 EXPORT_SYMBOL_GPL(find_pid_ns);
 
+/* 在当前进程的名称空间中查找进程号为nr的pid */
 struct pid *find_vpid(int nr)
 {
 	return find_pid_ns(nr, task_active_pid_ns(current));
@@ -432,6 +460,7 @@ void transfer_pid(struct task_struct *old, struct task_struct *new,
 	hlist_replace_rcu(&old->pids[type].node, &new->pids[type].node);
 }
 
+/* 将pid对应链表首部的元素取出 */
 struct task_struct *pid_task(struct pid *pid, enum pid_type type)
 {
 	struct task_struct *result = NULL;
@@ -461,6 +490,7 @@ struct task_struct *find_task_by_vpid(pid_t vnr)
 	return find_task_by_pid_ns(vnr, task_active_pid_ns(current));
 }
 
+/* 获取任务type类型的pid */
 struct pid *get_task_pid(struct task_struct *task, enum pid_type type)
 {
 	struct pid *pid;
@@ -542,6 +572,7 @@ pid_t task_tgid_nr_ns(struct task_struct *tsk, struct pid_namespace *ns)
 }
 EXPORT_SYMBOL(task_tgid_nr_ns);
 
+/* 获取当前进程所在的名称空间 */
 struct pid_namespace *task_active_pid_ns(struct task_struct *tsk)
 {
 	return ns_of_pid(task_pid(tsk));

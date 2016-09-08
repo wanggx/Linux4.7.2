@@ -20,12 +20,13 @@
 #include <linux/export.h>
 
 struct pid_cache {
-	int nr_ids;
-	char name[16];
-	struct kmem_cache *cachep;
-	struct list_head list;
+	int nr_ids;             /* 表示名称空间的层级 */
+	char name[16];      /* 空间层级的名称 */
+	struct kmem_cache *cachep;         /* 这个层级分配struct pid的slab指针 */
+	struct list_head list;    /* 连接pid_cache的双向链表 */
 };
 
+/* 因为struct pid有不同的层级，而根据层级的不同struct pid后面有不同大小的连续内存 */
 static LIST_HEAD(pid_caches_lh);
 static DEFINE_MUTEX(pid_caches_mutex);
 static struct kmem_cache *pid_ns_cachep;
@@ -51,7 +52,7 @@ static struct kmem_cache *create_pid_cachep(int nr_ids)
 
 	snprintf(pcache->name, sizeof(pcache->name), "pid_%d", nr_ids);
 	cachep = kmem_cache_create(pcache->name,
-			sizeof(struct pid) + (nr_ids - 1) * sizeof(struct upid),
+			sizeof(struct pid) + (nr_ids - 1) * sizeof(struct upid),   /* 注意这里nr_ids减了1 */
 			0, SLAB_HWCACHE_ALIGN, NULL);
 	if (cachep == NULL)
 		goto err_cachep;
@@ -79,10 +80,12 @@ static void proc_cleanup_work(struct work_struct *work)
 /* MAX_PID_NS_LEVEL is needed for limiting size of 'struct pid' */
 #define MAX_PID_NS_LEVEL 32
 
+/* 父空间创建子pid名称空间 */
 static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns,
 	struct pid_namespace *parent_pid_ns)
 {
 	struct pid_namespace *ns;
+        /* 增加名称空间的层级 */
 	unsigned int level = parent_pid_ns->level + 1;
 	int i;
 	int err;
@@ -97,6 +100,7 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
 	if (ns == NULL)
 		goto out;
 
+        /* 预先分配第0页 */
 	ns->pidmap[0].page = kzalloc(PAGE_SIZE, GFP_KERNEL);
 	if (!ns->pidmap[0].page)
 		goto out_free;
@@ -117,6 +121,7 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
 	ns->nr_hashed = PIDNS_HASH_ADDING;
 	INIT_WORK(&ns->proc_work, proc_cleanup_work);
 
+        /* 第一页全部清0 */
 	set_bit(0, ns->pidmap[0].page);
 	atomic_set(&ns->pidmap[0].nr_free, BITS_PER_PAGE - 1);
 

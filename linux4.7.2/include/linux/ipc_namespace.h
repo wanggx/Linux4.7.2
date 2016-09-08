@@ -18,6 +18,7 @@ struct ipc_ids {
 	int next_id;
 };
 
+/* ipc名称空间 */
 struct ipc_namespace {
 	atomic_t	count;
 	struct ipc_ids	ids[3];
