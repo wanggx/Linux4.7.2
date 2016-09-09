@@ -49,7 +49,7 @@ enum pid_type
 
 struct upid {
 	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
-	int nr;           /* 表示pid的值 */
+	int nr;           /* 表示在名称空间中占用的pid的值 */
 	struct pid_namespace *ns;  /* 所处的名称空间 */
 	struct hlist_node pid_chain;      /* hash链表 */
 };
@@ -72,8 +72,8 @@ extern struct pid init_struct_pid;
 
 struct pid_link
 {
-	struct hlist_node node;
-	struct pid *pid;
+	struct hlist_node node;          /* 形成pid中tasks对应类型的hash链表 */
+	struct pid *pid;                      /* 指向对应的pid */
 };
 
 /* 增加引用计数 */
@@ -167,6 +167,7 @@ static inline bool is_child_reaper(struct pid *pid)
  * see also task_xid_nr() etc in include/linux/sched.h
  */
 
+/* 获取进程在全局名称空间中的进程号 */
 static inline pid_t pid_nr(struct pid *pid)
 {
 	pid_t nr = 0;

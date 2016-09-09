@@ -46,6 +46,7 @@ struct nsproxy init_nsproxy = {
 #endif
 };
 
+/* 分配一个nsproxy结构，同时设置引用计数为1 */
 static inline struct nsproxy *create_nsproxy(void)
 {
 	struct nsproxy *nsproxy;
@@ -61,6 +62,7 @@ static inline struct nsproxy *create_nsproxy(void)
  * Return the newly created nsproxy.  Do not attach this to the task,
  * leave it to the caller to do proper locking and attach it to task.
  */
+/* 为任务创建一个新的总的名称空间 */
 static struct nsproxy *create_new_namespaces(unsigned long flags,
 	struct task_struct *tsk, struct user_namespace *user_ns,
 	struct fs_struct *new_fs)
@@ -135,6 +137,7 @@ out_ns:
  * called from clone.  This now handles copy for nsproxy and all
  * namespaces therein.
  */
+/* 拷贝进程名称空间 */
 int copy_namespaces(unsigned long flags, struct task_struct *tsk)
 {
 	struct nsproxy *old_ns = tsk->nsproxy;
@@ -158,6 +161,7 @@ int copy_namespaces(unsigned long flags, struct task_struct *tsk)
 	 * means share undolist with parent, so we must forbid using
 	 * it along with CLONE_NEWIPC.
 	 */
+        /* 判断标记是否冲突 */
 	if ((flags & (CLONE_NEWIPC | CLONE_SYSVSEM)) ==
 		(CLONE_NEWIPC | CLONE_SYSVSEM)) 
 		return -EINVAL;

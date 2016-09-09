@@ -33,8 +33,8 @@ struct nsproxy {
 	struct uts_namespace *uts_ns;
 	struct ipc_namespace *ipc_ns;
 	struct mnt_namespace *mnt_ns;
-	/* pid子名称空间 */
-	struct pid_namespace *pid_ns_for_children;
+	/* 进程所在的名称空间 */
+	struct pid_namespace *pid_ns_for_children; 
 	struct net 	     *net_ns;
 	struct cgroup_namespace *cgroup_ns;
 };
@@ -81,6 +81,7 @@ static inline void put_nsproxy(struct nsproxy *ns)
 	}
 }
 
+/* 增加引用计数 */
 static inline void get_nsproxy(struct nsproxy *ns)
 {
 	atomic_inc(&ns->count);

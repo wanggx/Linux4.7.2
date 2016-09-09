@@ -71,6 +71,7 @@ static inline int kref_sub(struct kref *kref, unsigned int count,
 {
 	WARN_ON(release == NULL);
 
+	/* 将引用计数减1，并判断是否为0，如果为0，则释放kref */
 	if (atomic_sub_and_test((int) count, &kref->refcount)) {
 		release(kref);
 		return 1;

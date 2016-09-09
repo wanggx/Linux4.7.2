@@ -1559,6 +1559,7 @@ struct task_struct {
 
 	struct restart_block restart_block;
 
+	/* 在顶层名称空间中的进程号 */
 	pid_t pid;
 	pid_t tgid;
 

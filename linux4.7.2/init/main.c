@@ -530,6 +530,7 @@ asmlinkage __visible void __init start_kernel(void)
 	 * kmem_cache_init()
 	 */
 	setup_log_buf(0);
+        /* pidhash链表的初始化 */
 	pidhash_init();
 	vfs_caches_init_early();
 	sort_main_extable();

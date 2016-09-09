@@ -26,6 +26,7 @@ struct fs_pin;
 struct pid_namespace {
 	struct kref kref;
 	struct pidmap pidmap[PIDMAP_ENTRIES];
+        /* 形成名称空间的RCU链表 */
 	struct rcu_head rcu;
 	int last_pid;		/* 空间当中最后一个分配的pid */
 	/* 名称空间当中添加到hash链表当中upid的个数 */

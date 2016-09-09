@@ -138,33 +138,39 @@ out:
 	return ERR_PTR(err);
 }
 
+/* 延迟释放名称空间 */
 static void delayed_free_pidns(struct rcu_head *p)
 {
 	kmem_cache_free(pid_ns_cachep,
 			container_of(p, struct pid_namespace, rcu));
 }
 
+/* 释放名称空间 */
 static void destroy_pid_namespace(struct pid_namespace *ns)
 {
 	int i;
 
 	ns_free_inum(&ns->ns);
+        /* 释放进程号位图 */
 	for (i = 0; i < PIDMAP_ENTRIES; i++)
 		kfree(ns->pidmap[i].page);
 	put_user_ns(ns->user_ns);
 	call_rcu(&ns->rcu, delayed_free_pidns);
 }
 
+/* 拷贝进程pid名称空间，并返回一个新的进程名称空间  */
 struct pid_namespace *copy_pid_ns(unsigned long flags,
 	struct user_namespace *user_ns, struct pid_namespace *old_ns)
 {
 	if (!(flags & CLONE_NEWPID))
 		return get_pid_ns(old_ns);
-	if (task_active_pid_ns(current) != old_ns)
+        /* 如果和当前进程的名称空间的进程空间不同，则无效 */
+	if (task_active_pid_ns(current) != old_ns)      
 		return ERR_PTR(-EINVAL);
 	return create_pid_namespace(user_ns, old_ns);
 }
 
+/* 释放引用计数对应的名称空间 */
 static void free_pid_ns(struct kref *kref)
 {
 	struct pid_namespace *ns;

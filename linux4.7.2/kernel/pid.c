@@ -39,10 +39,12 @@
 #include <linux/proc_ns.h>
 #include <linux/proc_fs.h>
 
+/* 根据名称空间和名称空间的进程号来hash出来一个数组索引 */
 #define pid_hashfn(nr, ns)	\
 	hash_long((unsigned long)nr + (unsigned long)ns, pidhash_shift)
 /* 是个数组，数组的元素为4个，见下面变量，
-  * 通过上面的宏hash数组中元素的位置
+  * 通过上面的宏hash数组中元素的位置，通过 
+  * struct upid的pid_chain成员来形成hash链表  
   */
 static struct hlist_head *pid_hash;
 static unsigned int pidhash_shift = 4;
@@ -109,6 +111,7 @@ EXPORT_SYMBOL_GPL(init_pid_ns);
 
 static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(pidmap_lock);
 
+/* 释放用户进程在名称空间中占用的进程号 */
 static void free_pidmap(struct upid *upid)
 {
 	int nr = upid->nr;
@@ -259,18 +262,22 @@ void put_pid(struct pid *pid)
 	ns = pid->numbers[pid->level].ns;
 	if ((atomic_read(&pid->count) == 1) ||
 	     atomic_dec_and_test(&pid->count)) {
+                /* 将pid从分配该pid的名称空间中删除 */
 		kmem_cache_free(ns->pid_cachep, pid);
 		put_pid_ns(ns);
 	}
 }
 EXPORT_SYMBOL_GPL(put_pid);
 
+/* 延迟释放struct pid结构 */
 static void delayed_put_pid(struct rcu_head *rhp)
 {
 	struct pid *pid = container_of(rhp, struct pid, rcu);
 	put_pid(pid);
 }
 
+
+/* 释放struct pid结构 */
 void free_pid(struct pid *pid)
 {
 	/* We can be called with write_lock_irq(&tasklist_lock) held */
@@ -278,10 +285,13 @@ void free_pid(struct pid *pid)
 	unsigned long flags;
 
 	spin_lock_irqsave(&pidmap_lock, flags);
+        /* 向顶层扫描名称空间 */
 	for (i = 0; i <= pid->level; i++) {
 		struct upid *upid = pid->numbers + i;
 		struct pid_namespace *ns = upid->ns;
+                /* 将每层的upid从pid_hash链表中删除 */
 		hlist_del_rcu(&upid->pid_chain);
+                /* 判断每层名称空间加入到pid_hash中的upid的个数  */
 		switch(--ns->nr_hashed) {
 		case 2:
 		case 1:
@@ -303,6 +313,7 @@ void free_pid(struct pid *pid)
 	}
 	spin_unlock_irqrestore(&pidmap_lock, flags);
 
+        /* 释放进程在所有名称空间的进程号 */
 	for (i = 0; i <= pid->level; i++)
 		free_pidmap(pid->numbers + i);
 
@@ -427,12 +438,15 @@ static void __change_pid(struct task_struct *task, enum pid_type type,
 	struct pid *pid;
 	int tmp;
 
+        /* 获取task中type类型对应的pid */
 	link = &task->pids[type];
 	pid = link->pid;
 
+        /* 从原来链表当中删除，并指向新的pid */
 	hlist_del_rcu(&link->node);
 	link->pid = new;
 
+        /* 如果有不同的类型链接到其他类型当中 */
 	for (tmp = PIDTYPE_MAX; --tmp >= 0; )
 		if (!hlist_empty(&pid->tasks[tmp]))
 			return;
@@ -572,7 +586,7 @@ pid_t task_tgid_nr_ns(struct task_struct *tsk, struct pid_namespace *ns)
 }
 EXPORT_SYMBOL(task_tgid_nr_ns);
 
-/* 获取当前进程所在的名称空间 */
+/* 获取创建tsk进程的名称空间 */
 struct pid_namespace *task_active_pid_ns(struct task_struct *tsk)
 {
 	return ns_of_pid(task_pid(tsk));
@@ -617,6 +631,7 @@ void __init pidhash_init(void)
 		INIT_HLIST_HEAD(&pid_hash[i]);
 }
 
+/* 初始化全局名称空间的进程号分配位图 */
 void __init pidmap_init(void)
 {
 	/* Verify no one has done anything silly: */
