@@ -22,6 +22,7 @@ struct uid_gid_map {	/* 64 bytes -- 1 cache line */
 
 #define USERNS_INIT_FLAGS USERNS_SETGROUPS_ALLOWED
 
+/* 用户名称空间 */
 struct user_namespace {
 	struct uid_gid_map	uid_map;
 	struct uid_gid_map	gid_map;
@@ -45,6 +46,7 @@ extern struct user_namespace init_user_ns;
 
 #ifdef CONFIG_USER_NS
 
+/* 增加引用计数 */
 static inline struct user_namespace *get_user_ns(struct user_namespace *ns)
 {
 	if (ns)

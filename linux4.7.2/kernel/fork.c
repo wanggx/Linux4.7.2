@@ -1266,6 +1266,7 @@ static void posix_cpu_timers_init(struct task_struct *tsk)
 	INIT_LIST_HEAD(&tsk->cpu_timers[2]);
 }
 
+/* 设置进程类型对应的struct pid */
 static inline void
 init_task_pid(struct task_struct *task, enum pid_type type, struct pid *pid)
 {
@@ -1615,7 +1616,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	if (likely(p->pid)) {
 		ptrace_init_task(p, (clone_flags & CLONE_PTRACE) || trace);
 
+                /* pid是从进程所在的名称空间当中分配的 */
 		init_task_pid(p, PIDTYPE_PID, pid);
+                /* 判断是否是线程组领头 */
 		if (thread_group_leader(p)) {
 			init_task_pid(p, PIDTYPE_PGID, task_pgrp(current));
 			init_task_pid(p, PIDTYPE_SID, task_session(current));

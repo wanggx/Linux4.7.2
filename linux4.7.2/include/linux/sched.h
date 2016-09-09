@@ -1978,8 +1978,10 @@ static inline bool should_numa_migrate_memory(struct task_struct *p,
 }
 #endif
 
+/* 创建任何一个任务时都有该函数返回的pid */
 static inline struct pid *task_pid(struct task_struct *task)
-{
+{	
+	/* PIDTYPE_PID对应的pid是在进程所在的名称空间当中分配的 */
 	return task->pids[PIDTYPE_PID].pid;
 }
 
@@ -2865,6 +2867,7 @@ static inline int get_nr_threads(struct task_struct *tsk)
 	return tsk->signal->nr_threads;
 }
 
+/* 判断是否是线程组零头线程 */
 static inline bool thread_group_leader(struct task_struct *p)
 {
 	return p->exit_signal >= 0;

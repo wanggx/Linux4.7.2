@@ -364,6 +364,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
 
 	get_pid_ns(ns);
 	atomic_set(&pid->count, 1);
+        /* 初始化各种类型的hash链表 */
 	for (type = 0; type < PIDTYPE_MAX; ++type)
 		INIT_HLIST_HEAD(&pid->tasks[type]);
 
@@ -400,7 +401,10 @@ void disable_pid_allocation(struct pid_namespace *ns)
 	spin_unlock_irq(&pidmap_lock);
 }
 
-/* 在名称空间当中查找进程号为nr的pid */
+/* 在全局hash链表当中查找
+  * 在名称空间当中查找进程号为nr的pid
+  * 因为pid都是从名称空间当中分配的   
+  */
 struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
 {
 	struct upid *pnr;
@@ -598,6 +602,7 @@ EXPORT_SYMBOL_GPL(task_active_pid_ns);
  *
  * If there is a pid at nr this function is exactly the same as find_pid_ns.
  */
+/* 在名称空间中查找进程号比nr更大的pid */
 struct pid *find_ge_pid(int nr, struct pid_namespace *ns)
 {
 	struct pid *pid;

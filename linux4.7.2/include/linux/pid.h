@@ -6,7 +6,8 @@
 enum pid_type
 {
 	PIDTYPE_PID,
-	PIDTYPE_PGID,
+       /* 进程组IP，和2.6.11比较是简化了TGID，把内核线程(轻量级进程)就当做进程来看 */
+	PIDTYPE_PGID,   
 	PIDTYPE_SID,
 	PIDTYPE_MAX
 };
@@ -51,7 +52,7 @@ struct upid {
 	/* Try to keep pid_chain in the same cacheline as nr for find_vpid */
 	int nr;           /* 表示在名称空间中占用的pid的值 */
 	struct pid_namespace *ns;  /* 所处的名称空间 */
-	struct hlist_node pid_chain;      /* hash链表 */
+	struct hlist_node pid_chain;      /* 维持pid_hash链表 */
 };
 
 struct pid

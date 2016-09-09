@@ -85,7 +85,7 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
 	struct pid_namespace *parent_pid_ns)
 {
 	struct pid_namespace *ns;
-        /* 增加名称空间的层级 */
+        /* 增加父名称空间的层级 */
 	unsigned int level = parent_pid_ns->level + 1;
 	int i;
 	int err;
@@ -115,6 +115,7 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
 	ns->ns.ops = &pidns_operations;
 
 	kref_init(&ns->kref);
+        /* 设置子名称空间的层级 */
 	ns->level = level;
 	ns->parent = get_pid_ns(parent_pid_ns);
 	ns->user_ns = get_user_ns(user_ns);
