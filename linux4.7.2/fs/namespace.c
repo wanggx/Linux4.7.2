@@ -929,6 +929,7 @@ static struct mount *skip_mnt_tree(struct mount *p)
 	return p;
 }
 
+/* 得到一个挂载点 */
 struct vfsmount *
 vfs_kern_mount(struct file_system_type *type, int flags, const char *name, void *data)
 {
@@ -3114,6 +3115,7 @@ static void __init init_mount_tree(void)
 	set_fs_root(current->fs, &root);
 }
 
+/* 挂载初始化 */
 void __init mnt_init(void)
 {
 	unsigned u;

@@ -11,6 +11,7 @@ struct fs_struct {
 	seqcount_t seq;
 	int umask;
 	int in_exec;
+        /* 当前进程文件系统的根目录和当前目录 */
 	struct path root, pwd;
 };
 

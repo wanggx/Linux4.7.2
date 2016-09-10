@@ -4,14 +4,15 @@
 #include <linux/ns_common.h>
 #include <linux/fs_pin.h>
 
+/* 挂载名称空间 */
 struct mnt_namespace {
 	atomic_t		count;
 	struct ns_common	ns;
-	struct mount *	root;
+	struct mount *	root;     /* 指向对应的挂载点 */
 	struct list_head	list;
-	struct user_namespace	*user_ns;
+	struct user_namespace	*user_ns;         /* 对应的用户空间 */
 	u64			seq;	/* Sequence number to prevent loops */
-	wait_queue_head_t poll;
+	wait_queue_head_t poll;       /* 队列 */
 	u64 event;
 };
 
@@ -52,7 +53,7 @@ struct mount {
 	struct list_head mnt_slave_list;/* list of slave mounts */
 	struct list_head mnt_slave;	/* slave list entry */
 	struct mount *mnt_master;	/* slave is on master->mnt_slave_list */
-	struct mnt_namespace *mnt_ns;	/* containing namespace */
+	struct mnt_namespace *mnt_ns;	/* containing namespace */   /* 包含的名称空间 */
 	struct mountpoint *mnt_mp;	/* where is it mounted */
 	struct hlist_node mnt_mp_list;	/* list mounts with the same mountpoint */
 #ifdef CONFIG_FSNOTIFY

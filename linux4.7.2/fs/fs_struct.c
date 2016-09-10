@@ -29,6 +29,7 @@ void set_fs_root(struct fs_struct *fs, const struct path *path)
  * Replace the fs->{pwdmnt,pwd} with {mnt,dentry}. Put the old values.
  * It can block.
  */
+/* 设置进程的当前工作目录 */
 void set_fs_pwd(struct fs_struct *fs, const struct path *path)
 {
 	struct path old_pwd;

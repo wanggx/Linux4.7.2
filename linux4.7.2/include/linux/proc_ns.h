@@ -12,6 +12,7 @@ struct path;
 struct task_struct;
 struct inode;
 
+/* 处理名称空间的函数 */
 struct proc_ns_operations {
 	const char *name;
 	int type;

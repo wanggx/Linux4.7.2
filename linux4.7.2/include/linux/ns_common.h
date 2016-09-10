@@ -4,9 +4,9 @@
 struct proc_ns_operations;
 
 struct ns_common {
-	atomic_long_t stashed;
+	atomic_long_t stashed;      /* 被初始化为0 */
 	const struct proc_ns_operations *ops;
-	unsigned int inum;
+	unsigned int inum;            /* 被初始化为1 */
 };
 
 #endif

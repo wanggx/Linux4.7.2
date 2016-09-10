@@ -605,6 +605,8 @@ out:
 }
 
 static bool is_tmpfs;
+
+/* rootfs的挂载函数 */
 static struct dentry *rootfs_mount(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *data)
 {
